@@ -1,4 +1,6 @@
-# object-tracker
+Tracking/data analysis software for the double pendulum experiment at the University of Michigan
+
+<!--# object-tracker
 
 ![Image](docs/images/cover-image-1.png)
 
@@ -61,3 +63,4 @@ __NOTE__ -- If you want to do multi object tracking code, use the file `object-t
 ## How to perform tracking
 
 Once the code starts, it will start the video file or the live stream. To select the objects to be tracked, pause the video by pressing the <kbd>p</kbd> key.The next step is to create a bounding box around the object(s) to be tracked. Press the mouse to select the top-left pixel location of the object to be tracked and then release the mouse on the bottom-right location of the object to be tracked. Once, this is done press <kbd>p</kbd> to start the tracking. Also, if you want to discard the object, press the <kbd>d</kbd> key. In SINGLE OBJECT TRACKING MODE, you can only select one object but in MULTI OBJECT TRACKING MODE, you can select as many objects you want but at the cost of speed. Press <kbd>esc</kbd> anytime to gracefully quit the code.
+-->

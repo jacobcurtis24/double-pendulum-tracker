@@ -137,7 +137,7 @@ def analyze(primary_positions, secondary_positions, video_name):
 	j = 1
 
 	# MAYBE DO THIS: add in first point by hand
-
+	# need to ignore this first point during the analysis phase due to the zero velocities. can do this with array slicing
 	data[0][0] = primary_positions[0][0]
 	theta_t = np.arctan2(primary_positions[0][2], primary_positions[0][1]) + np.pi / 2
 	if theta_t > np.pi:
@@ -146,68 +146,45 @@ def analyze(primary_positions, secondary_positions, video_name):
 	theta_t = np.arctan2(secondary_positions[0][2], secondary_positions[0][1]) + np.pi / 2
 	if theta_t > np.pi:
 		theta_t -= 2 * np.pi
-	data[0][3] = theta_t
+	data[0][3] = theta_t 
 
-	# do derivative my modifying previous values and adding half
+	# take derivative my modifying previous values and adding half
 
 	# convert positions to angle measurements (this is just subtracting positions)
 	secondary_rotations = 0
 	while i < max_index and j < max_index:
-		# check to see if left and right frames have been captured
-		if np.isclose(primary_positions[i][0], primary_positions[j][0], atol = 1e-5):
-			if True or np.isclose(primary_positions[i][0] - primary_positions[i - 1][0], DT, atol = 1e-5) and np.isclose(primary_positions[i + 1][0] - primary_positions[i][0], DT, atol = 1e-5) and np.isclose(secondary_positions[i][0] - secondary_positions[i - 1][0], DT, atol = 1e-5) and np.isclose(secondary_positions[i + 1][0] - secondary_positions[i][0], DT, atol = 1e-5):
-				# add time
-				data[data_size][0] = primary_positions[i][0]
-				#print(primary_positions[i][0] / 8)
-				# add theta_1
-				theta_1 = np.arctan2(primary_positions[i][2], primary_positions[i][1]) + np.pi / 2
-				if theta_1 > np.pi:
-					theta_1 -= 2 * np.pi
-				data[data_size][1] = theta_1
-				# add theta_2
-				theta_2 = np.arctan2(secondary_positions[j][2] - primary_positions[i][2], secondary_positions[j][1] - primary_positions[i][1]) + np.pi / 2
-				if theta_2 > np.pi:
-					theta_2 -= 2 * np.pi
-				if data[data_size - 1][3] - 2 * np.pi * secondary_rotations > 0 and theta_2 < 0 and theta_2 < -np.pi / 2:
-					#print(data[data_size - 1][3] - 2 * np.pi * secondary_rotations)
-					#print(theta_2)
-					secondary_rotations += 1
-				'''if theta_2 > data[data_size - 1][3] and theta_2 > 0 and data[data_size - 1][3] < 0:
-					secondary_rotations -= 1'''
-				data[data_size][3] = theta_2 + secondary_rotations * 2 * np.pi
-				data_size += 1
-				i += 1
-				j += 1
-			else:
-				i += 1
-				j += 1
-		# else increment the one with smaller time
-		elif primary_positions[i][0] > secondary_positions[j][0]:
-			j += 1
-		else:
-			i += 1
+		# add time
+		data[data_size][0] = primary_positions[i][0]
+		#print(primary_positions[i][0] / 8)
+		# add theta_1
+		theta_1 = np.arctan2(primary_positions[i][2], primary_positions[i][1]) + np.pi / 2
+		if theta_1 > np.pi:
+			theta_1 -= 2 * np.pi
+		data[data_size][1] = theta_1
+		# add theta_2
+		theta_2 = np.arctan2(secondary_positions[j][2] - primary_positions[i][2], secondary_positions[j][1] - primary_positions[i][1]) + np.pi / 2
+		if theta_2 > np.pi:
+			theta_2 -= 2 * np.pi
+		if data[data_size - 1][3] - 2 * np.pi * secondary_rotations > 0 and theta_2 < 0 and theta_2 < -np.pi / 2:
+			secondary_rotations += 1
+		data[data_size][3] = theta_2 + secondary_rotations * 2 * np.pi
+		data_size += 1
+		i += 1
+		j += 1
 
 	# trim off zero entries at the end
-	data = data[range(data_size), :]
+	#data = data[range(data_size), :]
 	#print(secondary_rotations)
 	# derivatives calculated average the left and right derivatives
 	# could improve this by using the 5 point derivative
 	# will need to trim off first
 	i = 1
-	bad_data = []
 	while i < data_size - 1:
-		if True or np.isclose(primary_positions[i][0] - primary_positions[i - 1][0], DT, atol = 1e-5) and np.isclose(primary_positions[i + 1][0] - primary_positions[i][0], DT, atol = 1e-5) and np.isclose(secondary_positions[i][0] - secondary_positions[i - 1][0], DT, atol = 1e-5) and np.isclose(secondary_positions[i + 1][0] - secondary_positions[i][0], DT, atol = 1e-5):
-			data[i][2] = (data[i + 1][1] - data[i - 1][1]) / (2 * DT)
-			data[i][4] = (data[i + 1][3] - data[i - 1][3]) / (2 * DT)
-		else:
-			bad_data.append(i)
+		data[i][2] = (data[i + 1][1] - data[i - 1][1]) / (2 * DT)
+		data[i][4] = (data[i + 1][3] - data[i - 1][3]) / (2 * DT)
 		i += 1
 	data = data[range(1, data_size), :]
 	count = 0
-	for p in bad_data:
-		print data[p][0]
-		np.delete(data, p - count, 0)
-		count += 1
 
 	# will now calculate the Hamiltonian
 	hamiltonian = []

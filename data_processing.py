@@ -132,37 +132,21 @@ def analyze(primary_positions, secondary_positions, video_name):
 	# format of data list: time, theta_1, theta_1 dot, theta_2, theta_2 dot
 	data = np.zeros((max_index, 5))
 
-	data_size = 1
-	i = 1
-	j = 1
-
-	# MAYBE DO THIS: add in first point by hand
-	# need to ignore this first point during the analysis phase due to the zero velocities. can do this with array slicing
-	data[0][0] = primary_positions[0][0]
-	theta_t = np.arctan2(primary_positions[0][2], primary_positions[0][1]) + np.pi / 2
-	if theta_t > np.pi:
-		theta_t -= 2 * np.pi
-	data[0][1] = theta_t
-	theta_t = np.arctan2(secondary_positions[0][2], secondary_positions[0][1]) + np.pi / 2
-	if theta_t > np.pi:
-		theta_t -= 2 * np.pi
-	data[0][3] = theta_t 
-
-	# take derivative my modifying previous values and adding half
+	data_size = 0
+	i = 0
 
 	# convert positions to angle measurements (this is just subtracting positions)
 	secondary_rotations = 0
-	while i < max_index and j < max_index:
+	while i < max_index:
 		# add time
 		data[data_size][0] = primary_positions[i][0]
-		#print(primary_positions[i][0] / 8)
 		# add theta_1
 		theta_1 = np.arctan2(primary_positions[i][2], primary_positions[i][1]) + np.pi / 2
 		if theta_1 > np.pi:
 			theta_1 -= 2 * np.pi
 		data[data_size][1] = theta_1
 		# add theta_2
-		theta_2 = np.arctan2(secondary_positions[j][2] - primary_positions[i][2], secondary_positions[j][1] - primary_positions[i][1]) + np.pi / 2
+		theta_2 = np.arctan2(secondary_positions[i][2] - primary_positions[i][2], secondary_positions[i][1] - primary_positions[i][1]) + np.pi / 2
 		if theta_2 > np.pi:
 			theta_2 -= 2 * np.pi
 		if data[data_size - 1][3] - 2 * np.pi * secondary_rotations > 0 and theta_2 < 0 and theta_2 < -np.pi / 2:
@@ -170,14 +154,9 @@ def analyze(primary_positions, secondary_positions, video_name):
 		data[data_size][3] = theta_2 + secondary_rotations * 2 * np.pi
 		data_size += 1
 		i += 1
-		j += 1
 
-	# trim off zero entries at the end
-	#data = data[range(data_size), :]
-	#print(secondary_rotations)
 	# derivatives calculated average the left and right derivatives
 	# could improve this by using the 5 point derivative
-	# will need to trim off first
 	i = 1
 	while i < data_size - 1:
 		data[i][2] = (data[i + 1][1] - data[i - 1][1]) / (2 * DT)
@@ -185,6 +164,9 @@ def analyze(primary_positions, secondary_positions, video_name):
 		i += 1
 	data = data[range(1, data_size), :]
 	count = 0
+
+	# trim off first row that has uninitialized zero velocity
+	data = data[range(1, len(data)), :]
 
 	# will now calculate the Hamiltonian
 	hamiltonian = []
@@ -207,14 +189,10 @@ def analyze(primary_positions, secondary_positions, video_name):
 	# cast Hamiltonian array to an numpy array
 	hamiltonian = np.array(hamiltonian)
 
-	# print out hamiltonian values
-	'''for u in hamiltonian[:, 0]:
-		print(u)'''
-
 	# will now calculate the lyapunov exponents
 	lyapunov_exp = np.zeros((data.shape[0], 5))
 	i = 0
-	for k in data: #[range(0, 240 * 1), :]:
+	for k in data:
 		lyapunov_exp[i][0] = k[0]
 		p1 = A11 * k[2] + (A12 + B12 * np.cos(k[3] - k[1])) * k[4]
 		p2 = A22 * k[4] + (A12 + B12 * np.cos(k[3] - k[1])) * k[2]
@@ -241,8 +219,8 @@ def analyze(primary_positions, secondary_positions, video_name):
 	make_csv(video_name + "_averaged_lyapunov_data.csv", lyapunov_avg)
 	make_csv(video_name + "_hamiltonian_data.csv", hamiltonian)
 	make_csv(video_name + "_position_data.csv", data)
-	#plotrange = range(3*240+120, 4*240)
 
+	# make plots
 	f1 = plt.figure()
 	ax1 = f1.add_subplot(111)
 	ax1.set_ylabel("Hamiltonian")
@@ -255,7 +233,6 @@ def analyze(primary_positions, secondary_positions, video_name):
 	ax2.set_ylabel("Secondar Angle Velocity [radians]")
 	ax2.set_xlabel("Time [s]")
 	ax2.plot(data[:,0], data[:,4], "r-", label="$\dot{\Theta_2}$")
-	#print data[:,1]
 
 	f3 = plt.figure()
 	ax3 = f3.add_subplot(111)

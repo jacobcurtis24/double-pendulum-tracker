@@ -162,44 +162,27 @@ def analyze(primary_positions, secondary_positions, video_name):
 		data[i][2] = (data[i + 1][1] - data[i - 1][1]) / (2 * DT)
 		data[i][4] = (data[i + 1][3] - data[i - 1][3]) / (2 * DT)
 		i += 1
-	data = data[range(1, data_size), :]
-	count = 0
 
 	# trim off first row that has uninitialized zero velocity
 	data = data[range(1, len(data)), :]
 
 	# will now calculate the Hamiltonian
-	hamiltonian = []
-	for k in data:
-		current = []
-		current.append(k[0])
+	hamiltonian = np.zeros((data.shape[0], 2))
+	for i, k in enumerate(data):
+		hamiltonian[i][0] = k[0]
 		H = A11 * np.power(k[2], 2) / 2 + (A12 + B12 * np.cos(k[3] - k[1])) * k[2] * k[4] + A22 * np.power(k[4], 2) / 2 - C1 * np.cos(k[1]) - C2 * np.cos(k[3])
-		current.append(H)
-		hamiltonian.append(current)
-
-	# Hamiltonian with rolling average
-	'''rol_size = 1
-	for p in range(data.shape[0] - rol_size):
-		current = []
-		current.append(data[p][0])
-		H = A11 * np.power(np.average(data[range(p, p + rol_size), 2]), 2) / 2 + (A12 + B12 * np.cos(np.average(data[range(p, p + rol_size), 3]) - np.average(data[range(p, p + rol_size), 1]))) * np.average(data[range(p, p + rol_size), 2]) * np.average(data[range(p, p + rol_size), 4]) + A22 * np.power(np.average(data[range(p, p + rol_size), 4]), 2) / 2 - C1 * np.cos(np.average(data[range(p, p + rol_size), 1])) - C2 * np.cos(np.average(data[range(p, p + rol_size), 3]))
-		current.append(H)
-		hamiltonian.append(current)'''
-
-	# cast Hamiltonian array to an numpy array
-	hamiltonian = np.array(hamiltonian)
+		hamiltonian[i][1] = H
 
 	# will now calculate the lyapunov exponents
 	lyapunov_exp = np.zeros((data.shape[0], 5))
-	i = 0
-	for k in data:
+	
+	for i, k in enumerate(data):
 		lyapunov_exp[i][0] = k[0]
 		p1 = A11 * k[2] + (A12 + B12 * np.cos(k[3] - k[1])) * k[4]
 		p2 = A22 * k[4] + (A12 + B12 * np.cos(k[3] - k[1])) * k[2]
 		L = lyapunov([k[1], p1, k[3], p2])
 		for p in range(4):
 			lyapunov_exp[i][p + 1] = L[p]
-		i += 1
 
 	lyapunov_avg = np.zeros((data.shape[0], 5))
 	for k in range(1, data.shape[0]):
@@ -230,9 +213,9 @@ def analyze(primary_positions, secondary_positions, video_name):
 
 	f2 = plt.figure()
 	ax2 = f2.add_subplot(111)
-	ax2.set_ylabel("Secondar Angle Velocity [radians]")
+	ax2.set_ylabel("Secondary Position [radians]")
 	ax2.set_xlabel("Time [s]")
-	ax2.plot(data[:,0], data[:,4], "r-", label="$\dot{\Theta_2}$")
+	ax2.plot(data[:,0], data[:,3], "r-", label="$\dot{\Theta_2}$")
 
 	f3 = plt.figure()
 	ax3 = f3.add_subplot(111)

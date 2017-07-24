@@ -53,7 +53,7 @@ def run(source=0, dispLoc=False):
     points = points2
     tracker = []
     for i in range(2):
-        tracker.append(cv2.Tracker_create("BOOSTING")) #use BOOSTING, but change samplerSearchFactor. seems to work well at 2.5f
+        tracker.append(cv2.Tracker_create("MIL")) #use BOOSTING, but change samplerSearchFactor. seems to work well at 2.5f
     # Provide the tracker the initial position of the object
     [tracker[i].init(img, rect) for i, rect in enumerate(points)]
 

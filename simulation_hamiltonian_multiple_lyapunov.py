@@ -84,28 +84,25 @@ def rk4(x,t,tau,derivsRK):
 
 	return xout	
 
-def runSim(disp1, disp2):
+def runSim(Y_INIT):
 	global globalYINIT
 	T_INIT = 0.0
-	N_SELECT=2
 
-	Y_INIT = globalYINIT+np.array([disp1, 0.0, disp2, 0.0])
 
 	F_NAME='d_chaos_am'
 
-	N_STEPS = 30000
+	N_STEPS = 10000
 	DT = 0.001
 	T = T_INIT
 	YA = Y_INIT
 	TIME = np.arange(0,N_STEPS,DT)
 	YM = zeros(4, N_STEPS+1)
-	#YL = zeros(4, N_STEPS+1)
-	#YH = zeros(4, N_STEPS+1)
-	#EIGEN = zeros(4, N_STEPS+1)
+	EIGEN = zeros(4, N_STEPS+1)
 	YM[0]=YA
-	#EIGEN[0]=lyapunov(YA)
+	EIGEN[0]=lyapunov(YA)
 
 	plotT1=[]
+	plotT2=[]
 	plotX=[]
 
 	for I in range(1,N_STEPS+1):
@@ -114,11 +111,12 @@ def runSim(disp1, disp2):
 		T = T+DT
 		YA = YB
 		YM[I] = YA
-		#EIGEN[I] = lyapunov(YA)
+		EIGEN[I] = lyapunov(YA)
+		
 		plotT1.append(YA)
 		plotX.append(T)
 
-	return plotX, plotT1
+	return plotX, plotT1, EIGEN
 
 M_SCALE=1.0
 L_SCALE=1000.0
@@ -152,21 +150,6 @@ OMEGA_A = C2/A22
 OMEGA_B = (C1-C2)/(A11+2.0*(A12-B12)+A22)
 OMEGA_C = (C1+C2)/(A11+2.0*(A12+B12)+A22)
 
-
-############################################################################################################
-# Plot variables
-############################################################################################################
-
-#Starting points! angle1, p1, angle2, p2
-globalYINIT=np.array([-pi*60/180,0,-pi*60/180,0])
-
-#variance on starting angles 
-variance=0.0005
-#variance = .41*.41
-
-#time at which to calculate lyapunov exponent
-#this value should be (desired time)/0.001
-
 ############################################################################################################
 # Plot
 ############################################################################################################
@@ -183,26 +166,29 @@ style=["-","--",":"]
 selected_positions1 = []
 selected_positions2 = []
 #run one simulation
-disp1=np.random.normal(0,np.sqrt(variance))
-disp2=np.random.normal(0,np.sqrt(variance))
-time, T1=runSim(disp1,disp2)
-T1 = np.array(T1)
-hamiltonian = []
-for i in range(len(T1)):
-	numerator = A22 * T1[i][1] ** 2 - 2 * (A12 + B12 * np.cos(T1[i][2] - T1[i][0])) * T1[i][1] * T1[i][3] + A11 * T1[i][3] ** 2
-	denominator = A11 * A22 - (A12 + B12 * np.cos(T1[i][2] - T1[i][0])) ** 2
-	ham = 1 / 2 * numerator / denominator - C1 * np.cos(T1[i][0]) - C2 * np.cos(T1[i][2])
-	# let's do this with theta dots
-	b = A12 + B12 * np.cos(T1[i][2] - T1[i][0])
-	dtheta_1 = (A22 * T1[i][1] - b * T1[i][3]) / (A11 * A22 - b ** 2)
-	dtheta_2 = (A11 * T1[i][3] - b * T1[i][1]) / (A11 * A22 - b ** 2)
-	ham2 = A11 / 2 * dtheta_1 ** 2 + (A12 + B12 * np.cos(T1[i][2] - T1[i][0])) * dtheta_1 * dtheta_2 + A22 / 2 * dtheta_2 ** 2 - C1 * np.cos(T1[i][0]) - C2 * np.cos(T1[i][2])
-	hamiltonian.append(ham2)
+init_pos = [(-60 / 180 * np.pi, 0, -60 / 180 * np.pi, 0), (-55 / 180 * np.pi, 0, -55 / 180 * np.pi, 0), (-65 / 180 * np.pi, 0, -65 / 180 * np.pi, 0)]
+time = []
+runs = []
+for i in init_pos:
+	time, T1, eigen = runSim(i)
+	eigen = np.array(eigen)
+	runs.append(eigen)
 
-ax1.set_title("Hamiltonian over Time\n$\Theta_1={0}\pi$, $\Theta_2={1}\pi$.".format(globalYINIT[0]/pi, globalYINIT[2]/pi))
-ax1.set_ylabel("Energy")
+lyapunov_exps = np.zeros((3, len(time)))
+for k, i in enumerate(runs):
+	for j in range(len(time)):
+		if j == 0:
+			lyapunov_exps[k][j] = np.real(i[0][0])
+		else:
+			lyapunov_exps[k][j] = np.real(np.mean(i[0:j, 0]))
+			
+ax1.set_title("Lyapunov with slightly varying initial conditions.")
+ax1.set_ylabel("Lyapunov exponent")
 ax1.set_xlabel("Time [s]")
-ax1.plot(time, hamiltonian, "r-", label="Hamiltonian")
+ax1.plot(time, lyapunov_exps[0, :], "r-", label="60 degrees")
+ax1.plot(time, lyapunov_exps[1, :], "b-", label="55 degrees")
+ax1.plot(time, lyapunov_exps[2, :], "g-", label="65 degrees")
+ax1.legend(loc='best')
 
 plt.show()
 

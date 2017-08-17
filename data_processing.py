@@ -9,13 +9,13 @@ import csv
 import time
 
 def lyapunov(Y):
-	R=A12+B12*cos(Y[2]-Y[0])
-	S=A11*A22-R**2
-	T=A22*Y[1]-R*Y[3]
-	U=-R*Y[1]+A11*Y[3]
-	S_TERM=B12*sin(Y[2]-Y[0])
-	C_TERM=B12*cos(Y[2]-Y[0])
-	DQ=-(T*U*C_TERM+(T*Y[1]+U*Y[3])*S_TERM**2)/S**2+4.00*R*T*U*S_TERM**2/S**3
+	R = A12+B12*cos(Y[2]-Y[0])
+	S = A11*A22-R**2
+	T = A22*Y[1]-R*Y[3]
+	U = -R*Y[1]+A11*Y[3]
+	S_TERM = B12*sin(Y[2]-Y[0])
+	C_TERM = B12*cos(Y[2]-Y[0])
+	DQ = -(T*U*C_TERM+(T*Y[1]+U*Y[3])*S_TERM**2)/S**2+4.00*R*T*U*S_TERM**2/S**3
 	J11 = (S*Y[3]-2.00*A22*U)*S_TERM/S**2
 	J33 = (S*Y[1]-2.00*R*U)*S_TERM/S**2
 	J12 = A22/S
@@ -32,9 +32,9 @@ def lyapunov(Y):
 	J42 = -J13
 	J43 = -C2*cos(Y[2])+DQ
 	J44 = -J33
-	J=[[J11,J12,J13,J14],[J21,J22,J23,J24],[J31,J32,J33,J34],[J41,J42,J43,J44]]
+	J = [[J11,J12,J13,J14],[J21,J22,J23,J24],[J31,J32,J33,J34],[J41,J42,J43,J44]]
 	C = det(J)
-	B=-(0.50*(J[0][0]**2 + J[1][0]*J[0][1] + J[2][2]**2 + J[3][2]*J[2][3]) + J[1][3]*J[3][1] + J[1][2]*J[2][1])
+	B = -(0.50*(J[0][0]**2 + J[1][0]*J[0][1] + J[2][2]**2 + J[3][2]*J[2][3]) + J[1][3]*J[3][1] + J[1][2]*J[2][1])
 	D=B**2-C
 	if D >= 0.0:
 		Z=[-B+sqrt(D), -B-sqrt(D)]

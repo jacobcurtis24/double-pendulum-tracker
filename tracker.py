@@ -1,16 +1,29 @@
 # Import the required modules
-import cv2
 import argparse as ap
 import get_points
 from data_processing import *
 import numpy as np
 import os.path
 
+
+# need to do perspective correction before selecting origin
+# need to figure out what to use as reference to calculate perspective transform
+# possible candidates: white background board
+# can't use primary arm as any reference is already distorted and we need to calculate actual
+# arm size. That is, we will scale incorrectly. What about using spacing between screws on white
+# backboard? This could work, but a measurement will need to be made in person.
+# use width of bottom of primary arm to set length/pixel scale in image.
+# it passes relatively close to the center of the image so shouldn't be distorted too much there.
 def run(source=0, dispLoc=False):
+    vertical_size = 720
+    frame_rate = 240
+    try:
+        import cv2
+    except:
+        print "openCV not installed"
+        exit()
     # Create the VideoCapture object
     cam = cv2.VideoCapture(source)
-    lower = np.array([5, 2, 116])
-    upper = np.array([65, 110, 236])
     # If Camera Device is not opened, exit the program
     if not cam.isOpened():
         print "Video device or file couldn't be opened"
@@ -20,16 +33,15 @@ def run(source=0, dispLoc=False):
     while True:
         # Retrieve an image and Display it.
         retval, img = cam.read()
-        #mask = cv2.inRange(img, lower, upper)
-        #img = cv2.bitwise_and(img, img, mask=mask)
+        vertical_size = len(img)
         if not retval:
             print "Cannot capture frame device"
             exit()
         if(cv2.waitKey(10) % 256 == ord('p')):
             break
-        cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
-        cv2.imshow("Image", img)
-    cv2.destroyWindow("Image")
+        cv2.namedWindow("Video Preview", cv2.WINDOW_NORMAL)
+        cv2.imshow("Video Preview", img)
+    cv2.destroyWindow("Video Preview")
 
     # Co-ordinates of objects to be tracked 
     # will be stored in a list named `points`
@@ -63,8 +75,6 @@ def run(source=0, dispLoc=False):
         curr_bound_box = []
         # Read frame from device or file
         retval, img = cam.read()
-        #mask = cv2.inRange(img, lower, upper)
-        #img = cv2.bitwise_and(img, img, mask=mask)
         if not retval:
             cam.release()
             break
@@ -72,16 +82,13 @@ def run(source=0, dispLoc=False):
         for i in xrange(len(tracker)):
             ok, bbox = tracker[i].update(img)
             curr_bound_box.append(bbox)
-            # Get the bounding box of th object, draw a 
+            # Get the bounding box of ith object, draw a 
             # box around it and display it.
             pt1 = (int(bbox[0]), int(bbox[1]))
             pt2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
             cv2.rectangle(img, pt1, pt2, (255, 255, 255), 2)
-            #print "Object {} tracked at [{}, {}] \r".format(i, pt1, pt2),
             if dispLoc:
                 loc = (int(rect.left()), int(rect.top()-20))
-	        #txt = "Object tracked at [{}, {}]".format(pt1, pt2)
-	        #cv2.putText(img, txt, loc , cv2.FONT_HERSHEY_SIMPLEX, .5, (255,255,255), 1)
         cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
         cv2.imshow("Image", img)
         # Continue until the user presses ESC key
@@ -93,12 +100,12 @@ def run(source=0, dispLoc=False):
     primary = np.zeros((len(bounding_boxes), 3), dtype=float)
     secondary = np.zeros((len(bounding_boxes), 3), dtype=float)
     for i, rect in enumerate(bounding_boxes):
-        primary[i][0] = i / float(240)
-        secondary[i][0] = i / float(240)
+        primary[i][0] = i / float(frame_rate)
+        secondary[i][0] = i / float(frame_rate)
         primary[i][1] = rect[0][0] + rect[0][2] / 2 - origin[0]
-        primary[i][2] = 720 - rect[0][1] + rect[0][3] / 2 - (720 - origin[1])
+        primary[i][2] = vertical_size - rect[0][1] + rect[0][3] / 2 - (vertical_size - origin[1])
         secondary[i][1] = rect[1][0] + rect[1][2] / 2 - origin[0]
-        secondary[i][2] = 720 - rect[1][1] + rect[1][3] / 2 - (720 - origin[1])
+        secondary[i][2] = vertical_size - rect[1][1] + rect[1][3] / 2 - (vertical_size - origin[1])
     return primary, secondary
     
 
